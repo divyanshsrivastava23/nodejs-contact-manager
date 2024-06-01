@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const userSchema = mongoose.Schema(
   {
+    refreshToken: String,
     username: {
       type: String,
       required: [true, 'Please add the User Name'],

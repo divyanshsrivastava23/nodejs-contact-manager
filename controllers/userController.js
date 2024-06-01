@@ -2,6 +2,10 @@ const expressAsyncHandler = require('express-async-handler');
 const User = require('../modals/userModal');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const {
+  generateJwtToken,
+  generateRefreshToken,
+} = require('../utils/generateTokens');
 
 //@desc Register user
 //@route POST /api/users
@@ -53,23 +57,41 @@ const loginUser = expressAsyncHandler(async (req, res) => {
   const user = await User.findOne({ email });
 
   if (user && (await bcrypt.compare(password, user.password))) {
-    const accessToken = jwt.sign(
-      {
-        user: {
-          username: user.username,
-          email: user.email,
-          id: user.id,
-        },
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
-    );
+    const accessToken = generateJwtToken(user);
+    const refreshToken = generateRefreshToken(user);
 
-    res.status(200).json({ accessToken });
+    user.refreshToken = refreshToken;
+    await user.save();
+    res.status(200).json({ accessToken, refreshToken });
   } else {
     res.status(401);
     throw new Error('Email or Password not valid..');
   }
+});
+
+//@desc Generate new Access token from refresh token
+//@route POST /api/refresh-token
+//@access private
+const generateNewAccessToken = expressAsyncHandler(async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    res.status(401);
+    throw new Error('Refresh token required to generate new access token.');
+  }
+  const payload = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+  const user = await User.findById(payload.user.id);
+
+  if (!user || user.refreshToken !== refreshToken) {
+    res.status(403);
+    throw new Error('Invalid refresh token.');
+  }
+
+  const newAccessToken = generateJwtToken(user);
+  const newRefreshToken = generateRefreshToken(user);
+
+  user.refreshToken = newRefreshToken;
+  await user.save();
+  res.json({ accessToken: newAccessToken, refreshToken: refreshToken });
 });
 
 //@desc Current user info
@@ -83,4 +105,5 @@ module.exports = {
   registerUser,
   loginUser,
   currentUser,
+  generateNewAccessToken,
 };
