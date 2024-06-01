@@ -14,10 +14,6 @@ const getContacts = expressAsyncHandler(async (req, res) => {
 //@access private
 const createContact = expressAsyncHandler(async (req, res) => {
   const { name, email, phone } = req.body;
-  if (!name || !email || !phone) {
-    res.status(400);
-    throw new Error('All fields are mandatory');
-  }
   const contact = await Contact.create({
     name,
     email,

@@ -12,11 +12,6 @@ const {
 //@access public
 const registerUser = expressAsyncHandler(async (req, res) => {
   const { username, email, password } = req.body;
-  if (!username || !email || !password) {
-    res.status(400);
-    throw new Error('All fields are mandatory');
-  }
-
   const isUserAvailable = await User.findOne({ email });
 
   if (isUserAvailable) {
@@ -48,12 +43,6 @@ const registerUser = expressAsyncHandler(async (req, res) => {
 //@access public
 const loginUser = expressAsyncHandler(async (req, res) => {
   const { email, password } = req.body;
-
-  if (!email || !password) {
-    res.status(400);
-    throw new Error('All fields are mandatory');
-  }
-
   const user = await User.findOne({ email });
 
   if (user && (await bcrypt.compare(password, user.password))) {
