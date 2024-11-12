@@ -13,6 +13,7 @@ const getContacts = expressAsyncHandler(async (req, res) => {
 //@route POST /api/contacts
 //@access private
 const createContact = expressAsyncHandler(async (req, res) => {
+  console.log(req, res, 'testing');
   const { name, email, phone } = req.body;
   const contact = await Contact.create({
     name,
